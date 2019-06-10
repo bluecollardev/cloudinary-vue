@@ -1,7 +1,7 @@
 /**
  * Injects cloudinary parent State (stateful stream)
  */
-export const cldChild = {
+export const cldParentState = {
   inject: {
     cldParentState: {
       default() {

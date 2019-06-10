@@ -1121,11 +1121,11 @@ var cldAttrsOwned = {
     this.ownState.complete();
   }
 };
-// CONCATENATED MODULE: ./src/mixins/cldChild.js
+// CONCATENATED MODULE: ./src/mixins/cldParentState.js
 /**
  * Injects cloudinary parent State (stateful stream)
  */
-var cldChild = {
+var cldParentState = {
   inject: {
     cldParentState: {
       default: function _default() {
@@ -1143,7 +1143,7 @@ var cldChild = {
  */
 
 var cldAttrsInherited = {
-  mixins: [cldAttrs, cldChild],
+  mixins: [cldAttrs, cldParentState],
   created: function created() {
     var _this = this;
 
@@ -1893,7 +1893,7 @@ var CldPostervue_type_template_id_52119a98_staticRenderFns = []
  */
 
 var cldAttrsSubmitting = {
-  mixins: [cldAttrs, cldChild],
+  mixins: [cldAttrs, cldParentState],
   created: function created() {
     var _this = this;
 
@@ -1997,7 +1997,7 @@ var CldPoster_component = normalizeComponent(
 /* harmony default export */ var CldTransformationvue_type_script_lang_js_ = ({
   name: "CldTransformation",
   inheritAttrs: false,
-  mixins: [cldChild],
+  mixins: [cldParentState],
   render: function render() {
     return null;
   },
@@ -2586,7 +2586,7 @@ function getUserComponentName(components, name) {
     });
 
     if (entry == null) {
-      return undefined;
+      return null;
     }
 
     if (typeof entry === "string") {
@@ -2598,7 +2598,7 @@ function getUserComponentName(components, name) {
 
 
   if (typeof components[name] === "boolean") {
-    return components[name] === true ? name : undefined;
+    return components[name] === true ? name : null;
   } // { components: { CldImage: 'CloudinaryImage' } }
 
 
@@ -2609,9 +2609,10 @@ function getUserComponentName(components, name) {
   // { components: { CloudinaryImage: CldImage } }
 
 
-  return find(keys_default()(components), function (k) {
+  var found = find(keys_default()(components), function (k) {
     return typeof components[k] === "string" && components[k] === name || typeof_typeof(components[k]) === "object" && components[k] != null && components[k].name === name;
   });
+  return found === undefined ? null : found;
 }
 // CONCATENATED MODULE: ./src/index.js
 

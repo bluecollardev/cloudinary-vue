@@ -1,5 +1,5 @@
 import { cldAttrs } from "./cldAttrs";
-import { cldChild } from "./cldChild";
+import { cldParentState } from "./cldParentState";
 
 /**
  * Modify cloudinary parent CombinedState
@@ -7,7 +7,7 @@ import { cldChild } from "./cldChild";
  * through dedicated State instance
  */
 export const cldAttrsSubmitting = {
-  mixins: [cldAttrs, cldChild],
+  mixins: [cldAttrs, cldParentState],
 
   created() {
     if (!this.cldParentState) {

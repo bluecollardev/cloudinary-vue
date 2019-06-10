@@ -1,12 +1,12 @@
 import { cldAttrs } from "./cldAttrs";
-import { cldChild } from "./cldChild";
+import { cldParentState } from "./cldParentState";
 
 /**
  * Ties cloudinary parent element state
  * with components own
  */
 export const cldAttrsInherited = {
-  mixins: [cldAttrs, cldChild],
+  mixins: [cldAttrs, cldParentState],
 
   created() {
     this.addReadyCheck("cldAttrsOwned");

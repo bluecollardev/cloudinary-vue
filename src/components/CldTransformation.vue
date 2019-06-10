@@ -1,5 +1,5 @@
 <script>
-import { cldChild } from "../mixins/cldChild";
+import { cldParentState } from "../mixins/cldParentState";
 import { normalizeTransformation } from "../helpers/attributes";
 import { equal } from "../utils";
 
@@ -10,7 +10,7 @@ import { equal } from "../utils";
 export default {
   name: "CldTransformation",
   inheritAttrs: false,
-  mixins: [cldChild],
+  mixins: [cldParentState],
 
   render() {
     return null;
