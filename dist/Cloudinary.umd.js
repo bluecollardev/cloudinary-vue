@@ -110,13 +110,6 @@ module.exports = require("core-js/library/fn/get-iterator");
 
 /***/ }),
 
-/***/ "2a3b":
-/***/ (function(module, exports) {
-
-module.exports = require("core-js/library/fn/is-iterable");
-
-/***/ }),
-
 /***/ "3c59":
 /***/ (function(module, exports) {
 
@@ -166,13 +159,6 @@ module.exports = __webpack_require__("bea1");
 
 /***/ }),
 
-/***/ "774e":
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__("afb5");
-
-/***/ }),
-
 /***/ "8079":
 /***/ (function(module, exports) {
 
@@ -215,24 +201,10 @@ module.exports = require("core-js/library/fn/object/keys");
 
 /***/ }),
 
-/***/ "afb5":
-/***/ (function(module, exports) {
-
-module.exports = require("core-js/library/fn/array/from");
-
-/***/ }),
-
 /***/ "bea1":
 /***/ (function(module, exports) {
 
 module.exports = require("core-js/library/fn/symbol");
-
-/***/ }),
-
-/***/ "c8bb":
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__("2a3b");
 
 /***/ }),
 
@@ -738,9 +710,7 @@ function flatten(subject) {
 var attributes_configuration = external_cloudinary_core_["Configuration"].CONFIG_PARAMS.map(external_cloudinary_core_["Util"].camelCase);
 /** List of all transformation fields as they are needed in components attributes */
 
-var attributes_transformation = external_cloudinary_core_["Transformation"].PARAM_NAMES.map(external_cloudinary_core_["Util"].camelCase).filter(function (name) {
-  return attributes_configuration.indexOf(name) < 0;
-});
+var attributes_transformation = external_cloudinary_core_["Transformation"].methods;
 /** Extract configuration options for provided object */
 
 function normalizeConfiguration(cfg) {
@@ -2011,7 +1981,8 @@ var CldPoster_component = normalizeComponent(
     }
   },
   created: function created() {
-    this.transformationComponentState = this.cldParentState.spawn();
+    this.transformationComponentState = this.cldParentState.spawn(); // REVIEW assuming cldpParentState is CommonState, but the default is State!
+
     this.transformationComponentState.next(this.transformationComponent);
   },
   updated: function updated() {
@@ -2258,45 +2229,7 @@ var CldVideo_component = normalizeComponent(
 )
 
 /* harmony default export */ var CldVideo = (CldVideo_component.exports);
-// CONCATENATED MODULE: ./node_modules/@babel/runtime-corejs2/helpers/esm/arrayWithoutHoles.js
-
-function _arrayWithoutHoles(arr) {
-  if (is_array_default()(arr)) {
-    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-}
-// EXTERNAL MODULE: ./node_modules/@babel/runtime-corejs2/core-js/array/from.js
-var from = __webpack_require__("774e");
-var from_default = /*#__PURE__*/__webpack_require__.n(from);
-
-// EXTERNAL MODULE: ./node_modules/@babel/runtime-corejs2/core-js/is-iterable.js
-var is_iterable = __webpack_require__("c8bb");
-var is_iterable_default = /*#__PURE__*/__webpack_require__.n(is_iterable);
-
-// CONCATENATED MODULE: ./node_modules/@babel/runtime-corejs2/helpers/esm/iterableToArray.js
-
-
-function _iterableToArray(iter) {
-  if (is_iterable_default()(Object(iter)) || Object.prototype.toString.call(iter) === "[object Arguments]") return from_default()(iter);
-}
-// CONCATENATED MODULE: ./node_modules/@babel/runtime-corejs2/helpers/esm/nonIterableSpread.js
-function _nonIterableSpread() {
-  throw new TypeError("Invalid attempt to spread non-iterable instance");
-}
-// CONCATENATED MODULE: ./node_modules/@babel/runtime-corejs2/helpers/esm/toConsumableArray.js
-
-
-
-function _toConsumableArray(arr) {
-  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
-}
 // CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js??ref--12-0!./node_modules/thread-loader/dist/cjs.js!./node_modules/babel-loader/lib!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader/lib??vue-loader-options!./src/components/CldPicture.vue?vue&type=script&lang=js&
-
-
 
 
 
@@ -2315,6 +2248,10 @@ function _toConsumableArray(arr) {
   name: "CldPicture",
   inheritAttrs: false,
   mixins: [ready_ready, mounted, cldAttrsInherited, cldAttrsOwned],
+  // REVIEW cldAttrsInherited -> cldParentState injects cldParentState which defaults to CldGlobalContextState
+  // REVIEW cldAttrsInherited -> cldAttrs provides cldParentState: this.cldAttrsState
+  // REVIEW cldAttrsOwned -> cldAttrs
+  // REVIEW cldAttrs -> ready
   render: function render(h) {
     return h("picture", this.pictureOptions, this.sourcesAttrs.map(function (attrs) {
       return h("source", {
@@ -2404,24 +2341,33 @@ function _toConsumableArray(arr) {
         return [];
       }
 
-      return this.sources.map(function (sourceConfig) {
-        var transformation = combineTransformationComponents(sourceConfig.transformation ? normalizeTransformation(sourceConfig.transformation) : _this.cldAttrs.transformation);
-        var htmlAttrs = normalizeRest(omit(sourceConfig, ["max_width", "min_width"]));
-        var srcset = external_cloudinary_core_["Cloudinary"].new(_this.cldAttrs.configuration).url(_this.publicId, transformation);
+      return this.sources.map(function (_ref) {
+        var transformation = _ref.transformation,
+            min_width = _ref.min_width,
+            max_width = _ref.max_width;
 
-        var media = _toConsumableArray([sourceConfig.max_width ? ["max-width", num2px(sourceConfig.max_width)] : null, sourceConfig.min_width ? ["min-width", num2px(sourceConfig.min_width)] : null].filter(function (s) {
-          return !!s;
-        })).map(function (chunk) {
-          return chunk.length > 1 ? "(".concat(chunk.join(": "), ")") : chunk.join("");
-        }).join(" and ");
+        if (typeof transformation === "string") {
+          transformation = {
+            raw_transformation: transformation
+          };
+        }
 
-        return merge({
-          media: "all"
-        }, htmlAttrs, {
-          srcset: srcset
-        }, media ? {
-          media: media
-        } : {});
+        var sourceTransformation = new external_cloudinary_core_["Transformation"](_this.cldAttrs.transformation).chain().fromOptions(transformation);
+        var srcset = external_cloudinary_core_["Cloudinary"].new(_this.cldAttrs.configuration).url(_this.publicId, sourceTransformation);
+        var mediaElements = [];
+
+        if (max_width) {
+          mediaElements.push("(max-width: ".concat(num2px(max_width), ")"));
+        }
+
+        if (min_width) {
+          mediaElements.push("(min-width: ".concat(num2px(min_width), ")"));
+        }
+
+        return {
+          srcset: srcset,
+          media: mediaElements.join(" and ")
+        };
       });
     }
   }

@@ -1,18 +1,19 @@
 import { merge, compact } from "../utils";
+// REVIEW what is the difference between utils and helpers?
 
 /** Combines many objects
  * { publicId, configuration, transformation }
  * provided as arguments into one
- * @param  {...{ publicId, configuration, transformation }} transformations
+ * @param  {...{ publicId, configuration, transformation }} options
  */
 export function combineOptions(...options) {
-  const publicId = merge.apply(this, options).publicId;
+  let publicId = null;
+  for (let i = options.length - 1; !publicId && i >= 0; i--) {
+    publicId = options[i] && options[i].publicId;
+  }
 
   const configuration = compact(
-    merge.apply(
-      this,
-      compact(compact(options).map(option => option.configuration))
-    )
+    merge(...options.map(option => option && option.configuration))
   );
 
   const transformation = compact(

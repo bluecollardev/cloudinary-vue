@@ -8,7 +8,7 @@ describe("CldPicture", () => {
   it("allows transformation from CldTransformation", async () => {
     const picture = mount({
       template: `
-        <cld-picture cloudName="demo" publicId="face_top" :sources="[{ media: 'all', transformation: {} }]">
+        <cld-picture cloudName="demo" publicId="face_top" :sources="[{ min_width: 100, transformation: {} }]">
           <cld-transformation effect="sepia" />
         </cld-picture>
       `,
@@ -23,7 +23,7 @@ describe("CldPicture", () => {
       "http://res.cloudinary.com/demo/image/upload/e_sepia/face_top"
     );
     expect(sourcesOfPicture(picture)).toEqual({
-      all: "http://res.cloudinary.com/demo/image/upload/face_top"
+      "(min-width: 100px)": "http://res.cloudinary.com/demo/image/upload/face_top"
     });
   });
 });

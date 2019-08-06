@@ -1,9 +1,7 @@
 <script>
 import { Cloudinary, Transformation } from "cloudinary-core";
-import { merge, omit } from "../utils";
-import { normalizeTransformation, normalizeRest } from "../helpers/attributes";
-import { combineTransformationComponents } from "../helpers/combineOptions";
-
+import { merge } from "../utils";
+import { normalizeRest } from "../helpers/attributes";
 import { ready } from "../mixins/ready";
 import { mounted } from "../mixins/mounted";
 import { cldAttrsInherited } from "../mixins/cldAttrsInherited";
@@ -19,6 +17,11 @@ export default {
   name: "CldPicture",
   inheritAttrs: false,
   mixins: [ready, mounted, cldAttrsInherited, cldAttrsOwned],
+  // REVIEW cldAttrsInherited -> cldParentState injects cldParentState which defaults to CldGlobalContextState
+  // REVIEW cldAttrsInherited -> cldAttrs provides cldParentState: this.cldAttrsState
+
+  // REVIEW cldAttrsOwned -> cldAttrs
+  // REVIEW cldAttrs -> ready
   render(h) {
     return h(
       "picture",
@@ -110,43 +113,33 @@ export default {
         return [];
       }
 
-      return this.sources.map(sourceConfig => {
-        const transformation = combineTransformationComponents(
-          sourceConfig.transformation
-            ? normalizeTransformation(sourceConfig.transformation)
-            : this.cldAttrs.transformation
-        );
+      return this.sources.map(({ transformation, min_width, max_width }) => {
+        if (typeof transformation === "string") {
+          transformation = { raw_transformation: transformation };
+        }
 
-        const htmlAttrs = normalizeRest(
-          omit(sourceConfig, ["max_width", "min_width"])
-        );
-
+        let sourceTransformation = new Transformation(
+          this.cldAttrs.transformation
+        )
+          .chain()
+          .fromOptions(transformation);
         const srcset = Cloudinary.new(this.cldAttrs.configuration).url(
           this.publicId,
-          transformation
+          sourceTransformation
         );
 
-        const media = [
-          ...[
-            sourceConfig.max_width
-              ? ["max-width", num2px(sourceConfig.max_width)]
-              : null,
-            sourceConfig.min_width
-              ? ["min-width", num2px(sourceConfig.min_width)]
-              : null
-          ].filter(s => !!s)
-        ]
-          .map(chunk =>
-            chunk.length > 1 ? `(${chunk.join(": ")})` : chunk.join("")
-          )
-          .join(" and ");
+        const mediaElements = [];
+        if (max_width) {
+          mediaElements.push(`(max-width: ${num2px(max_width)})`);
+        }
+        if (min_width) {
+          mediaElements.push(`(min-width: ${num2px(min_width)})`);
+        }
 
-        return merge(
-          { media: "all" },
-          htmlAttrs,
-          { srcset },
-          media ? { media } : {}
-        );
+        return {
+          srcset,
+          media: mediaElements.join(" and ")
+        };
       });
     }
   }

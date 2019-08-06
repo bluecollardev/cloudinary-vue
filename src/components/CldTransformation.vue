@@ -25,7 +25,7 @@ export default {
   },
 
   created() {
-    this.transformationComponentState = this.cldParentState.spawn();
+    this.transformationComponentState = this.cldParentState.spawn(); // REVIEW assuming cldpParentState is CommonState, but the default is State!
     this.transformationComponentState.next(this.transformationComponent);
   },
 
