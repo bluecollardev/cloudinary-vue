@@ -2,18 +2,18 @@
 import { Cloudinary, Transformation } from "cloudinary-core";
 import { merge, range } from "../utils";
 import { findInTransformations } from "../helpers/findInTransformations";
-import { normalizeNonCloudinary } from "../helpers/attributes";
+import { normalizeRest } from "../helpers/attributes";
 import { evalBreakpoints } from "../helpers/evalBreakpoints";
-import {
-  getResizeTransformation,
-  getResponsiveStyle
-} from "../helpers/responsiveness";
+import { getResizeTransformation } from "../helpers/getResizeTransformation";
 import { getPlaceholderURL } from "../helpers/getPlaceholderURL";
+import { combineOptions } from "../helpers/combineOptions";
 
+import { ready } from "../mixins/ready";
 import { size } from "../mixins/size";
+import { mounted } from "../mixins/mounted";
+import { cldAttrsInherited } from "../mixins/cldAttrsInherited";
+import { cldAttrsOwned } from "../mixins/cldAttrsOwned";
 import { lazy } from "../mixins/lazy";
-import { rejectTransformations } from "../helpers/rejectTransformations";
-import { withOptions } from "../mixins/withOptions";
 
 /**
  * Deliver images and specify image transformations using the cld-image (CldImage) component,
@@ -30,24 +30,24 @@ import { withOptions } from "../mixins/withOptions";
  */
 export default {
   name: "CldImage",
-
   inheritAttrs: false,
-
-  mixins: [size, lazy, withOptions],
-
+  mixins: [ready, size, mounted, lazy, cldAttrsInherited, cldAttrsOwned],
   render(h) {
-    return h(
-      "img",
-      this.imageAttrs,
-      rejectTransformations(this.$slots.default)
-    );
+    return h("img", this.imageAttrs, this.$slots.default);
   },
-
   props: {
     /**
      * The unique identifier of an uploaded image.
      */
     publicId: { type: String, default: "", required: true },
+    /**
+     * The folder path.
+     */
+    folder: { type: String, default: null, required: false },
+    /**
+     * The file version.
+     */
+    version: { type: String, default: "v1", required: false },
     /**
      * Whether to generate a JPEG using the [progressive (interlaced) JPEG
      * format](https://cloudinary.com/documentation/transformation_flags#delivery_and_image_format_flags).
@@ -70,12 +70,11 @@ export default {
     /**
      * How to make the image responsive to the available size based on layout. Possible values:
      *
-     * - `false` turns the feature off
-     * - `"width"` and `true` uses the available image *width* and allows image *height* to be set dynamically
-     * - `"height"` uses the available image *height* and allows image *width* to be set dynamically
-     * - `"fill"` uses the available image *width* and *height*
+     * - `width` uses the available image *width* and allows image *height* to be set dynamically
+     * - `height` uses the available image *height* and allows image *width* to be set dynamically
+     * - `fill` uses the available image *width* and *height*
      */
-    responsive: { type: [Boolean, String], default: false },
+    responsive: { type: String, default: "none" },
     /**
      * The set of possible breakpoint values to be used together with the responsive property. Either:
      *
@@ -88,66 +87,87 @@ export default {
       default: () => range(100, 4000, 100)
     }
   },
-
   computed: {
+    attributes() {
+      return merge(
+        this.$attrs,
+        this.progressive == true
+          ? {
+              flags: []
+                .concat(this.$attrs.flags ? this.$attrs.flags : [])
+                .concat("progressive")
+            }
+          : {},
+        this.responsive !== "none" && this.size
+          ? {
+              transformation: []
+                .concat(this.$attrs.transformation || [])
+                .concat(
+                  getResizeTransformation(
+                    this.responsive,
+                    this.size,
+                    evalBreakpoints(this.breakpoints)
+                  )
+                )
+            }
+          : {}
+      );
+    },
+    shouldMeasureSize() {
+      return this.responsive !== "none";
+    },
     imageAttrs() {
       const className = {
-        "cld-image": true
+        "cld-image": true,
+        "cld-fill": this.responsive === "fill",
+        "cld-fill-width": this.responsive === "width",
+        "cld-fill-height": this.responsive === "height"
       };
-
       if (
+        !this.isReady ||
         !this.publicId ||
         !!findInTransformations(
-          this.transformation,
+          this.cldAttrs.transformation,
           t => t.width === 0 || t.height === 0
-        ) ||
-        (this.responsive && !this.size)
+        )
       ) {
         return {
-          class: className,
-          style: getResponsiveStyle(this.responsive),
-          attrs: normalizeNonCloudinary(this.$attrs)
+          class: className
         };
       }
 
       if (this.lazy && !this.visible) {
-        const src = getPlaceholderURL(
-          this.placeholder,
-          this.publicId,
-          this.configuration,
-          this.transformation
-        );
         return {
           class: className,
-          style: getResponsiveStyle(this.responsive),
-          attrs: merge(normalizeNonCloudinary(this.$attrs), src ? { src } : {})
+          attrs: this.placeholder
+            ? {
+                src:
+                  getPlaceholderURL(
+                    this.placeholder,
+                    combineOptions({ publicId: this.publicId }, this.cldAttrs)
+                  ) || this.placeholder
+              }
+            : {}
         };
       }
 
-      const htmlAttrs = Transformation.new(
-        this.transformation
-      ).toHtmlAttributes();
-
-      const src = Cloudinary.new(this.configuration).url(
+      const htmlAttrs = Transformation.new({
+        transformation: this.cldAttrs.transformation
+      }).toHtmlAttributes();
+      let src = Cloudinary.new(this.cldAttrs.configuration).url(
         this.publicId,
-        merge(this.transformation, {
-          transformation: [
-            ...(this.transformation.transformation || []),
-            getResizeTransformation(
-              this.responsive,
-              this.size,
-              evalBreakpoints(this.breakpoints)
-            ),
-            ...(this.progressive ? [{ flags: ["progressive"] }] : [])
-          ]
-        })
+        this.cldAttrs
       );
+
+      // Hack to patch in the version and folder
+      if (this.folder) {
+        src = src.replace(/(\/)(?!.*\/)/, `/v${this.version}/${this.folder}/`);
+      }
 
       return {
         class: className,
-        style: getResponsiveStyle(this.responsive),
         attrs: merge(
-          normalizeNonCloudinary(this.$attrs),
+          normalizeRest(this.$attrs),
           htmlAttrs,
           src
             ? {
@@ -156,11 +176,28 @@ export default {
             : {}
         )
       };
-    },
-
-    shouldMeasureSize() {
-      return !this.responsive;
     }
   }
 };
 </script>
+
+<style lang="scss">
+.cld-image {
+  &.cld-fill-height {
+    display: block;
+    height: 100%;
+    width: auto;
+  }
+
+  &.cld-fill-width {
+    display: block;
+    width: 100%;
+  }
+
+  &.cld-fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+</style>
