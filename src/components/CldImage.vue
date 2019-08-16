@@ -41,6 +41,14 @@ export default {
      */
     publicId: { type: String, default: "", required: true },
     /**
+     * The folder path.
+     */
+    folder: { type: String, default: null, required: false },
+    /**
+     * The file version.
+     */
+    version: { type: String, default: "v1", required: false },
+    /**
      * Whether to generate a JPEG using the [progressive (interlaced) JPEG
      * format](https://cloudinary.com/documentation/transformation_flags#delivery_and_image_format_flags).
      */
@@ -146,10 +154,16 @@ export default {
       const htmlAttrs = Transformation.new({
         transformation: this.cldAttrs.transformation
       }).toHtmlAttributes();
-      const src = Cloudinary.new(this.cldAttrs.configuration).url(
+      let src = Cloudinary.new(this.cldAttrs.configuration).url(
         this.publicId,
         this.cldAttrs
       );
+
+      // Hack to patch in the version and folder
+      if (this.folder) {
+        src = src.replace(/(\/)(?!.*\/)/, `/v${this.version}/${this.folder}/`);
+      }
+
       return {
         class: className,
         attrs: merge(
